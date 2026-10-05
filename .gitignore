@@ -50,3 +50,12 @@ prepare_hytale_github*.py
 # Archives
 *.zip
 !data/processed/hytale_analytics.db
+
+# Local UI development helpers
+README_before_screenshots_*.md
+add_hytale_readme_screenshots.py
+apply_hytale_inspired_theme.py
+rebuild_hytale_ui_stage*.py
+dashboard_stage*_backup_*/
+theme_backup_*/
+screenshots_inbox/

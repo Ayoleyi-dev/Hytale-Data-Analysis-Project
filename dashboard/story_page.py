@@ -1,10 +1,18 @@
+
 from pathlib import Path
 import json
+import sys
+
 import pandas as pd
 import streamlit as st
 
-PROJECT = Path(__file__).resolve().parents[1]
-OBS = PROJECT / "data" / "observed"
+DASH = Path(__file__).resolve().parent
+ROOT = DASH.parent
+sys.path.insert(0, str(DASH))
+
+from ui import hero, section, note, footer
+
+OBS = ROOT / "data" / "observed"
 
 def read_jsonl(path):
     rows = []
@@ -25,55 +33,128 @@ if not events.empty:
 if not hb.empty:
     hb["observed_at"] = pd.to_datetime(hb["observed_at"], utc=True, errors="coerce")
 
-st.title("How I Built This Hytale Analytics Project")
-st.caption("I built this in two stages: synthetic analytics first, then a real local Hytale server collector.")
-
-st.header("Phase 1 — I started with synthetic data")
-st.write(
-    "I did not have access to Hytale's private production analytics. Instead of presenting made-up values as real player behaviour, "
-    "I generated a reproducible synthetic dataset so I could design and test the analytics workflow: sessions, DAU, retention, "
-    "feature usage, server operations, SQL, validation and dashboarding."
+hero(
+    "Project Story // From Simulation to Telemetry",
+    "How I Built the Analytics Lab",
+    "I started with synthetic player and server data so I could design the analytics system honestly. "
+    "Then I built a Java collector and validated the same workflow against a real Hytale server I controlled.",
+    ["Synthetic analytics", "Java collector", "Observed telemetry", "Privacy-aware"],
 )
-st.info("The synthetic side answers: Can I design the analytics system and reason about player/server metrics at useful scale?")
 
-st.header("Phase 2 — I validated it with a real Hytale server")
-st.write(
-    "I built a Java collector against Hytale's public Server API, compiled it against the server JAR, installed it on a local server, "
-    "authenticated the server, joined from the matching Hytale client, played briefly, left, and ingested the JSONL output."
-)
-st.success("The observed side answers: Can I collect genuine Hytale server observations safely and turn them into analysis?")
+section("Why I started with synthetic data")
+
+left, right = st.columns(2)
+
+with left:
+    with st.container(border=True):
+        st.markdown("#### Phase 1 — prove the analytics design")
+        st.write(
+            "I did not have access to Hytale's private production analytics, so I generated reproducible synthetic data instead of "
+            "pretending invented numbers were real player behaviour."
+        )
+        st.markdown(
+            """
+- player sessions
+- daily active players
+- D1 / D7 retention
+- feature usage
+- server TPS / latency scenarios
+- SQL + SQLite pipeline
+"""
+        )
+
+with right:
+    with st.container(border=True):
+        st.markdown("#### Phase 2 — prove the collection pipeline")
+        st.write(
+            "I compiled a Java collector against the Hytale server API, installed it on a local server, authenticated the server, "
+            "joined with the matching client, played briefly and ingested the resulting JSONL telemetry."
+        )
+        st.markdown(
+            """
+- player connect / disconnect
+- session reconstruction
+- player concurrency
+- JVM memory
+- world tick duration
+- data-quality validation
+"""
+        )
 
 if not events.empty and not hb.empty:
+    section("First validated local run", "Observed data — not synthetic")
+
     connects = events[events["event_type"].eq("player_connect")].sort_values("observed_at")
     disconnects = events[events["event_type"].eq("player_disconnect")].sort_values("observed_at")
+
     minutes = None
     if len(connects) and len(disconnects):
-        minutes = (disconnects.iloc[0]["observed_at"] - connects.iloc[0]["observed_at"]).total_seconds() / 60
+        minutes = (
+            disconnects.iloc[0]["observed_at"] - connects.iloc[0]["observed_at"]
+        ).total_seconds() / 60
+
     a, b, c, d = st.columns(4)
-    a.metric("Observed lifecycle events", len(events))
-    b.metric("Heartbeat samples", len(hb))
-    c.metric("Peak players online", int(hb["players_online"].max()) if "players_online" in hb else 0)
-    d.metric("First completed session", f"{minutes:.1f} min" if minutes is not None else "—")
-    st.subheader("What I noticed in the first validated run")
-    if minutes is not None:
-        st.markdown(f"- I captured a complete connect → disconnect session lasting about **{minutes:.1f} minutes**.")
-    if "players_online" in hb:
-        st.markdown(f"- The heartbeat data captured concurrency moving from 0 to **{int(hb['players_online'].max())}** and back to 0.")
-    if "memory_used_mb" in hb:
-        st.markdown(f"- JVM used memory ranged from **{int(hb['memory_used_mb'].min())} MB** to **{int(hb['memory_used_mb'].max())} MB**.")
-    st.warning("I treat this as one short local test, not as evidence about Hytale's overall player base or production performance.")
+    a.metric("Lifecycle events", len(events))
+    b.metric("Heartbeats", len(hb))
+    c.metric(
+        "Peak players online",
+        int(hb["players_online"].max()) if "players_online" in hb else 0,
+    )
+    d.metric(
+        "Completed session",
+        f"{minutes:.1f} min" if minutes is not None else "—",
+    )
 
-st.header("Privacy and provenance")
-st.write(
-    "I pseudonymize player identifiers with an HMAC-derived alias so sessions can be matched without keeping usernames or raw UUIDs. "
-    "The analytics dataset also excludes IP addresses, chat content and authentication tokens."
-)
+    with st.container(border=True):
+        st.markdown("#### What I noticed")
+        if minutes is not None:
+            st.markdown(f"- I reconstructed a full connect → disconnect session lasting **{minutes:.1f} minutes**.")
+        if "players_online" in hb:
+            st.markdown(
+                f"- The heartbeat series captured concurrency moving from **0 → {int(hb['players_online'].max())} → 0**."
+            )
+        if "memory_used_mb" in hb:
+            st.markdown(
+                f"- JVM used memory ranged from **{int(hb['memory_used_mb'].min())} MB** "
+                f"to **{int(hb['memory_used_mb'].max())} MB** during the capture."
+            )
 
-st.header("If I had official Hytale production data")
+    note(
+        "I use this run to validate the collector and analytics pipeline. I do not use one local session to make claims "
+        "about Hytale-wide players or production infrastructure.",
+        kind="gold",
+    )
+else:
+    section("First validated local run")
+    st.info(
+        "The public deployment intentionally does not ship my local collector output. "
+        "The repository includes screenshots from the validated local test."
+    )
+
+section("Privacy by design")
+
+with st.container(border=True):
+    st.write(
+        "The collector uses an HMAC-derived pseudonymous player identifier so I can match lifecycle events without storing "
+        "the player's raw identity in the analytics dataset."
+    )
+    st.markdown(
+        """
+**Intentionally excluded**
+- usernames
+- raw UUIDs
+- IP addresses
+- chat content
+- authentication tokens
+"""
+    )
+
+section("What I would do with authorized production data")
+
 st.write(
-    "I would extend this same pipeline to D1/D7/D30 retention, feature adoption, LiveOps/update impact, region/server reliability, "
+    "If Hytale provided an official dataset or authorized analytics API, I would keep the same source-separation rules and extend "
+    "the model toward D1/D7/D30 cohorts, new vs returning players, feature adoption, LiveOps/update impact, regional reliability, "
     "capacity planning and creator/server ecosystem analytics."
 )
 
-st.markdown("---")
-st.caption("Independent portfolio project. Synthetic results are simulations; observed results are scoped to the local server that generated them.")
+footer()

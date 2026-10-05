@@ -1,4 +1,4 @@
-﻿\
+
 from __future__ import annotations
 
 import sqlite3
@@ -9,45 +9,52 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-ROOT = Path(__file__).resolve().parents[1]
+DASH = Path(__file__).resolve().parent
+ROOT = DASH.parent
+
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(DASH))
 
 from src.metrics import overview, query_df, retention
+from ui import hero, section, note, footer, style_plot
 
 DB_PATH = ROOT / "data" / "processed" / "hytale_analytics.db"
 
-st.set_page_config(
-    page_title="Hytale Player & Server Analytics",
-    page_icon="ðŸ“Š",
-    layout="wide",
-)
-
-st.title("Synthetic Hytale Player & Server Analytics")
-st.info("Why synthetic? I needed enough reproducible data to test retention, engagement and server-operations analysis without pretending I had access to Hytale's private production telemetry. After proving the analytics logic here, I built the real local server collector shown on the Observed Server Data page.")
-
-st.caption(
-    "Portfolio demo using synthetic data. This dashboard is not affiliated with "
-    "Hypixel Studios and does not contain proprietary Hytale player data."
+hero(
+    "Synthetic Analytics // Scale Test",
+    "Player & Server Intelligence",
+    "I generated this reproducible simulation to design the analytics workflow at useful scale "
+    "without presenting invented values as real Hytale player behaviour.",
+    ["Player analytics", "Retention", "Feature usage", "Server operations", "Reproducible simulation"],
 )
 
 if not DB_PATH.exists():
-    st.error("Database not found.")
+    st.error("The synthetic SQLite database is not available in this environment.")
     st.code(
         "python src/generate_demo_data.py\n"
         "python src/build_database.py\n"
-        "streamlit run dashboard/app.py"
+        "python -m streamlit run dashboard/Portfolio_Story.py"
     )
     st.stop()
 
 conn = sqlite3.connect(DB_PATH)
 kpi = overview(conn)
 
-max_date = query_df(conn, "SELECT MAX(DATE(session_start)) AS max_date FROM player_sessions").iloc[0, 0]
-min_date = query_df(conn, "SELECT MIN(DATE(session_start)) AS min_date FROM player_sessions").iloc[0, 0]
+max_date = query_df(
+    conn,
+    "SELECT MAX(DATE(session_start)) AS max_date FROM player_sessions"
+).iloc[0, 0]
 
-st.sidebar.header("Dataset")
-st.sidebar.write(f"Period: **{min_date} â†’ {max_date}**")
-st.sidebar.info("All player identifiers are anonymous synthetic IDs.")
+min_date = query_df(
+    conn,
+    "SELECT MIN(DATE(session_start)) AS min_date FROM player_sessions"
+).iloc[0, 0]
+
+st.sidebar.markdown("### Synthetic dataset")
+st.sidebar.write(f"**{min_date} → {max_date}**")
+st.sidebar.caption("All player identifiers here are anonymous synthetic IDs.")
+
+section("Executive snapshot", "Simulation results")
 
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Players", f"{kpi['players']:,}")
@@ -56,7 +63,13 @@ c3.metric("Avg session", f"{kpi['avg_session_minutes']:.1f} min")
 c4.metric("D1 retention", f"{retention(conn, 1):.1f}%")
 c5.metric("D7 retention", f"{retention(conn, 7):.1f}%")
 
-st.subheader("Player engagement")
+note(
+    "These KPIs come from my synthetic scenario. They demonstrate the analytics logic; "
+    "they are not official Hytale statistics.",
+    kind="gold",
+)
+
+section("Player engagement")
 
 daily = query_df(
     conn,
@@ -75,7 +88,9 @@ fig_dau = px.line(
     markers=True,
     title="Daily Active Players",
     labels={"activity_date": "Date", "dau": "DAU"},
+    color_discrete_sequence=["#72D7D8"],
 )
+style_plot(fig_dau)
 st.plotly_chart(fig_dau, width="stretch")
 
 left, right = st.columns(2)
@@ -88,32 +103,35 @@ features = query_df(
     ORDER BY events DESC
     """,
 )
+
 fig_features = px.bar(
     features,
     x="feature_category",
     y="events",
     title="Feature Usage",
     labels={"feature_category": "Feature", "events": "Events"},
+    color_discrete_sequence=["#E6B85C"],
 )
+style_plot(fig_features)
 left.plotly_chart(fig_features, width="stretch")
 
 duration = query_df(
     conn,
-    """
-    SELECT duration_minutes
-    FROM player_sessions
-    """,
+    "SELECT duration_minutes FROM player_sessions",
 )
+
 fig_duration = px.histogram(
     duration,
     x="duration_minutes",
     nbins=35,
     title="Session Duration Distribution",
     labels={"duration_minutes": "Minutes"},
+    color_discrete_sequence=["#72D7D8"],
 )
+style_plot(fig_duration)
 right.plotly_chart(fig_duration, width="stretch")
 
-st.subheader("Retention")
+section("Retention", "Daily acquisition cohorts")
 
 retention_df = query_df(
     conn,
@@ -143,12 +161,14 @@ retention_df = query_df(
     ORDER BY cohort_date
     """,
 )
+
 retention_long = retention_df.melt(
     id_vars=["cohort_date", "acquired_players"],
     value_vars=["d1_retention_pct", "d7_retention_pct"],
     var_name="retention_window",
     value_name="retention_pct",
 )
+
 fig_retention = px.line(
     retention_long,
     x="cohort_date",
@@ -160,10 +180,16 @@ fig_retention = px.line(
         "retention_pct": "Retention %",
         "retention_window": "Window",
     },
+    color_discrete_sequence=["#A4E7E2", "#66B8FF"],
 )
+style_plot(fig_retention, "Retention window")
 st.plotly_chart(fig_retention, width="stretch")
 
-st.subheader("Server operations")
+st.caption(
+    "Daily cohorts are useful for diagnosis but can be noisy when individual cohort sizes are small."
+)
+
+section("Server operations", "Synthetic infrastructure scenario")
 
 health = query_df(
     conn,
@@ -177,6 +203,7 @@ health = query_df(
 health["metric_ts"] = pd.to_datetime(health["metric_ts"])
 
 h1, h2 = st.columns(2)
+
 fig_tps = px.line(
     health,
     x="metric_ts",
@@ -184,7 +211,9 @@ fig_tps = px.line(
     color="server_id",
     title="Server TPS",
     labels={"metric_ts": "Time", "tps": "TPS", "server_id": "Server"},
+    color_discrete_sequence=["#72D7D8", "#66B8FF", "#E6B85C"],
 )
+style_plot(fig_tps, "Server")
 h1.plotly_chart(fig_tps, width="stretch")
 
 fig_latency = px.line(
@@ -194,7 +223,9 @@ fig_latency = px.line(
     color="server_id",
     title="Latency",
     labels={"metric_ts": "Time", "latency_ms": "Latency (ms)", "server_id": "Server"},
+    color_discrete_sequence=["#72D7D8", "#66B8FF", "#E6B85C"],
 )
+style_plot(fig_latency, "Server")
 h2.plotly_chart(fig_latency, width="stretch")
 
 degraded = query_df(
@@ -212,21 +243,18 @@ with st.expander("Operational anomaly samples"):
     if degraded.empty:
         st.success("No degraded samples in the current demo dataset.")
     else:
-        st.dataframe(degraded, width="stretch")
+        st.dataframe(degraded, width="stretch", hide_index=True)
 
-st.subheader("Analyst interpretation")
+section("Analyst interpretation")
+
 st.markdown(
     """
-- **Retention:** compare D1 and D7 curves by acquisition cohort to identify whether
-  new-player stickiness changes over time.
-- **Feature usage:** use unique-player reach alongside raw event volume so highly
-  repetitive actions do not dominate interpretation.
-- **Operations:** investigate periods where TPS drops or latency spikes, then compare
-  them with player concurrency and memory/network load.
-- **Next step:** replace the synthetic event source with a real opt-in server-side
-  collector built against Hytale's public Server API.
+- **Retention:** compare cohort behaviour over time and investigate whether changes align with onboarding or content changes.
+- **Feature usage:** use both raw event volume and unique-player reach so repetitive mechanics do not dominate the story.
+- **Operations:** inspect TPS/latency changes alongside concurrency and resource pressure.
+- **Phase 2:** I also built and validated an opt-in Hytale server-side collector; that pipeline is documented separately in this project.
 """
 )
 
 conn.close()
-
+footer()
