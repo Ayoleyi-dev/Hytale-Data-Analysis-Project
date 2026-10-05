@@ -2,6 +2,16 @@
 
 ![Tests](https://github.com/Ayoleyi-dev/Hytale-Data-Analysis-Project/actions/workflows/tests.yml/badge.svg)
 
+<!-- LIVE_DEMO_START -->
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://hytale-analytics-ayoleyi.streamlit.app)
+
+**Live dashboard:** [hytale-analytics-ayoleyi.streamlit.app](https://hytale-analytics-ayoleyi.streamlit.app)
+
+> Start with **Project Story** for the full synthetic → observed telemetry case-study flow.
+
+<!-- LIVE_DEMO_END -->
+
 I built this project to explore how I would approach **player analytics, server telemetry, retention, and data quality for Hytale** without pretending I had access to Hypixel Studios' private production data.
 
 The project has two deliberately separate data tracks:
