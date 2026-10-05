@@ -1,0 +1,20 @@
+{
+  "Group": "dev.ayoleyi",
+  "Name": "HytaleAnalyticsCollector",
+  "Version": "0.2.0",
+  "Description": "Privacy-conscious server-side event collector for a Hytale analytics portfolio project.",
+  "Authors": [
+    {
+      "Name": "Ayoleyi Gbenga-Ayodeji"
+    }
+  ],
+  "Website": "",
+  "Main": "dev.ayoleyi.hytaleanalytics.HytaleAnalyticsPlugin",
+  "ServerVersion": "*",
+  "Dependencies": {},
+  "OptionalDependencies": {},
+  "LoadBefore": {},
+  "SubPlugins": [],
+  "DisabledByDefault": false,
+  "IncludesAssetPack": false
+}

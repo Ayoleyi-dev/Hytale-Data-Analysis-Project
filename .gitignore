@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token
+.streamlit/secrets.toml
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated data
+data/raw/*.csv
+data/processed/*.db
+data/processed/*.sqlite
+data/processed/*.sqlite3
+
+# Real observed telemetry stays local
+data/observed/*.jsonl
+data/observed/*.csv
+data/observed/run_metadata.json
+!data/observed/README.md
+
+# Build/runtime outputs
+collector/build/
+collector-output/
+*.log
+
+# Local helper/backup files
+dashboard_backup_*/
+polish_hytale_portfolio*.py
+prepare_hytale_github*.ps1
+prepare_hytale_github*.py
+
+# Archives
+*.zip
