@@ -90,6 +90,40 @@ Displays only telemetry captured from my local Hytale collector: completed sessi
 ### Data Provenance
 Documents where each dataset came from and what conclusions are safe to make from it.
 
+<!-- DASHBOARD_PREVIEW_START -->
+
+## Dashboard Preview
+
+I built the project in two stages: first with reproducible synthetic data to design and test the analytics workflow at scale, then with a real server-side collector running on a Hytale server I controlled.
+
+### Synthetic analytics overview
+
+![Synthetic analytics overview](docs/screenshots/synthetic-overview.png)
+
+Synthetic player/session KPIs and Daily Active Players. These values come from the reproducible simulation dataset.
+
+### Player behaviour analysis
+
+![Player behaviour analysis](docs/screenshots/player-behaviour.png)
+
+Feature usage and session-duration distribution from the synthetic analytics demo.
+
+### Observed local Hytale server telemetry
+
+![Observed local Hytale server telemetry](docs/screenshots/observed-server-health.png)
+
+Real telemetry from a Hytale server I controlled, showing player concurrency, JVM memory usage and observed world tick duration.
+
+### Data provenance and privacy boundary
+
+![Data provenance and privacy boundary](docs/screenshots/data-provenance.png)
+
+The project keeps synthetic, locally observed and unavailable production data explicitly separated.
+
+> The synthetic dashboard demonstrates analytics logic at scale. The observed-server dashboard is scoped only to my controlled local Hytale test environment and is not Hytale-wide production telemetry.
+
+<!-- DASHBOARD_PREVIEW_END -->
+
 ## Privacy boundary
 
 The collector uses an HMAC-derived pseudonymous player identifier and intentionally excludes:
