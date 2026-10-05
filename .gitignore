@@ -49,3 +49,4 @@ prepare_hytale_github*.py
 
 # Archives
 *.zip
+!data/processed/hytale_analytics.db
